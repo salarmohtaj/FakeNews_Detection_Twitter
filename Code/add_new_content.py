@@ -51,10 +51,10 @@ def preprocess(text):
     text = text.lower()
     return text
 
-df["text"]=df.apply(lambda x: preprocess(x['text']), axis=1)
-df["url_remove"]=df.apply(lambda x: replace_url(x['text'], rep=""), axis=1)
-df["url_replace_constant"]=df.apply(lambda x: replace_url(x['text'], rep="weblink"), axis=1)
-df["url_replace_text"]=df.apply(lambda x: replace_url_with_text(x['text']), axis=1)
+df["text"] = df.apply(lambda x: preprocess(x['text']), axis=1)
+df["url_remove"] = df.apply(lambda x: replace_url(x['text'], rep=""), axis=1)
+df["url_replace_constant"] = df.apply(lambda x: replace_url(x['text'], rep="weblink"), axis=1)
+df["url_replace_text"] = df.apply(lambda x: replace_url_with_text(x['text']), axis=1)
 
 data_name = "final_data.tsv"
 df.to_csv(os.path.join(data_directory,data_name), sep="\t")
