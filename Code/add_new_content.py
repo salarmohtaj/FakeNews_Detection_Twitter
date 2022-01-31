@@ -16,7 +16,7 @@ with open(os.path.join(data_directory, data_name), "rb") as f:
 
 cols= ["is_fake_news_2", "text"]
 df = df[cols]
-
+df = df.rename(columns={"is_fake_news_2": "label"})
 
 def extract_urls(text):
     link_regex = re.compile('((https?):((//)|(\\\\))+([\w\d:#@%/;$()~_?\+-=\\\.&](#!)?)*)', re.DOTALL)
