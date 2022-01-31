@@ -20,13 +20,7 @@ except:
     dic_complete = {}
 
 
-consumer_key = "xcGoidiNh1XVXKqKkhj7z7G12"
-consumer_secret = "nlVXAjnUCw6H5dZvZOA5KiVHKfi5oYuH1KGtH1el8NLKDRlVdt"
 
-access_token = "1176475874759270400-Km4TmFBcNkyyGYH9m9ZA7no5rHmi81"
-access_token_secret = "Z7hP9nqvZLARBOJsaApUg8AsZmlDjKoUno0C1d6rEa7ly"
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_token_secret)
 
 api = tweepy.API(auth)
 
