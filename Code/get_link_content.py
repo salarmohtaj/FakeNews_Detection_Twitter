@@ -5,7 +5,7 @@ import collections
 import tweepy
 import requests as RQ
 from bs4 import BeautifulSoup
-
+from connection_info import connection_dic
 data_directory = "../Data"
 data_name = "URL_DIC.DIC"
 with open(os.path.join(data_directory, data_name), "rb") as f:
@@ -21,7 +21,8 @@ except:
 
 
 
-
+auth = tweepy.OAuthHandler(connection_dic["consumer_key"], connection_dic["consumer_secret"])
+auth.set_access_token(connection_dic["access_token"], connection_dic["access_token_secret"])
 api = tweepy.API(auth)
 
 domains = []
