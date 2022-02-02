@@ -4,7 +4,7 @@ import re
 import pickle
 from sklearn.model_selection import KFold
 
-data_directory = "../Data"
+data_directory = "../../Data"
 data_name = "twitter_fakenews_USElections_2016.xlsx"
 
 df = pd.read_excel(os.path.join(data_directory, data_name)

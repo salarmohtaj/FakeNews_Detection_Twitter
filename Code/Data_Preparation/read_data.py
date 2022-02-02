@@ -97,7 +97,10 @@ print(len(list(set(url_list))))
 chunks = [url_list[x:x+200] for x in range(0, len(url_list), 200)]
 print(len(chunks))
 data_name = "urls_to_check"
-#
+
 for index, item in enumerate(chunks):
     with open(os.path.join(data_directory, data_name+str(index+1)+".LIST"), "wb") as f:
         pickle.dump(item, f)
+
+data_name = "Fake_True.csv"
+df.to_csv(os.path.join(data_directory, data_name), sep="\t")
