@@ -8,25 +8,32 @@ import collections
 
 
 data_directory = "../../Data"
-data_name = "True.xlsx"
+data_name = "True.csv"
 ##url = https://www.kaggle.com/clmentbisaillon/fake-and-real-news-dataset?select=True.csvs
 
-df_true = pd.read_excel(os.path.join(data_directory, data_name)
-                   , engine='openpyxl')
-
+df_true = pd.read_csv(os.path.join(data_directory, data_name))
 col = ["text"]
 df_true = df_true[col]
 df_true['label'] = False
-data_name = "Fake.xlsx"
-df_fake = pd.read_excel(os.path.join(data_directory, data_name)
-                   , engine='openpyxl')
+def remove_header(text):
+    try:
+        text = text.split(") -")[1].lstrip().rstrip()
+    except:
+        pass
+    return text
 
+df_true["text"] = df_true.apply(lambda x: remove_header(x['text']), axis=1)
+
+data_name = "Fake.csv"
+df_fake = pd.read_csv(os.path.join(data_directory, data_name))
 col = ["text"]
 df_fake = df_fake[col]
 df_fake['label'] = True
 df = pd.concat([df_fake,df_true])
 df = df.sample(frac=1)
 
+cols= ["label", "text"]
+df = df[cols]
 
 print(f'The dataframe has {df.shape[0]} rows and {df.shape[1]} columns')
 
@@ -101,6 +108,5 @@ data_name = "urls_to_check"
 for index, item in enumerate(chunks):
     with open(os.path.join(data_directory, data_name+str(index+1)+".LIST"), "wb") as f:
         pickle.dump(item, f)
-
-data_name = "Fake_True.csv"
+data_name = "Fake_True.tsv"
 df.to_csv(os.path.join(data_directory, data_name), sep="\t")

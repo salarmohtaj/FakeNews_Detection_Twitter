@@ -10,13 +10,13 @@ from sklearn.model_selection import KFold
 data_directory = "../Data/final_data"
 data_name = "final_data.tsv"
 
-text_column = "url_replace_text"
+text_column = "text"
 Corpus = pd.read_csv(os.path.join(data_directory,data_name), sep="\t")
 
 result_list_f1 = []
 result_list_acc = []
 
-for fold in range(1, 6):
+for fold in range(1, 2):
     Train = pd.read_csv(os.path.join(data_directory, str(fold),"train.tsv"), sep="\t")
     Test = pd.read_csv(os.path.join(data_directory, str(fold), "test.tsv"), sep="\t")
     Train_X = Train[text_column]
