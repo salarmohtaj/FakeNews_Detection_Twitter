@@ -1,7 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
-/Data/Fake.csv
-/Data/True.csv
+/Data/Kaggle Data/Fake.csv
+/Data/Kaggle Data/True.csv
 /Data/Fake.xlsx
 /Data/True.xlsx
-/Code/Data_Preparation/Old_data/
 /Data/Old_data/
+
