@@ -19,7 +19,7 @@ with open(os.path.join(data_directory, data_name), "rb") as f:
 df_true = df[(df["is_fake_news_2"] == 0)]
 df_fake = df[(df["is_fake_news_2"] == 1)]
 
-#df_true = df_true.sample(n=df_fake.shape[0])
+df_true = df_true.sample(n=df_fake.shape[0])
 
 
 #print(df_fake.shape)

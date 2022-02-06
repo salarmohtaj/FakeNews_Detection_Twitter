@@ -4,7 +4,7 @@ import re
 import pickle
 from sklearn.model_selection import KFold
 
-data_directory = "../../Data"
+data_directory = "../../../Data/Kaggle_Data"
 data_name = "Fake_True.tsv"
 
 # df = pd.read_excel(os.path.join(data_directory, data_name)
@@ -33,7 +33,7 @@ def replace_url_with_text(text):
         try:
             t = dic_complete[url]["text"]
             t = replace_url(t, rep="")
-            t = t.lower()
+            t = preprocess(t)
         except Exception as s:
             t = ""
         text = text.replace(url, t)
@@ -51,16 +51,17 @@ def preprocess(text):
     return text
 
 
-df["text"] = df.apply(lambda x: preprocess(x['text']), axis=1)
 df["url_remove"] = df.apply(lambda x: replace_url(x['text'], rep=""), axis=1)
 df["url_replace_constant"] = df.apply(lambda x: replace_url(x['text'], rep="weblink"), axis=1)
 df["url_replace_text"] = df.apply(lambda x: replace_url_with_text(x['text']), axis=1)
+df["text"] = df.apply(lambda x: preprocess(x['text']), axis=1)
+
 
 df = df.dropna()
 df = df.sample(frac=0.5)
 
 
-data_directory = "../../Data/final_data"
+data_directory = "../../../Data/Kaggle_Data/final_data"
 
 print(df["label"].value_counts())
 

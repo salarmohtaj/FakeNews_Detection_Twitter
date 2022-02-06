@@ -14,17 +14,17 @@ try:
 except:
     spacy_en = spacy.load('en')
 
-data_directory = "../Data/final_data"
-data_name = "final_data.tsv"
+#data_directory = "../Data/US_Election_Data/final_data"
+data_directory = "../Data/US_Election_Data/final_data"
 
-text_column = "url_replace_constant"
-#text_column = "url_replace_constant"
+text_column = "url_replace_text"
 
 def preprocess(text):
     #text = re.sub("@([A-Za-z0-9_]+)", "username", text)
     #text = re.sub(r"http\S+", "link", text)
-    text = demoji.replace_with_desc(text, sep=" ")
+    #text = demoji.replace_with_desc(text, sep=" ")
     text = re.sub('\s+', ' ', text)
+    text = text.lower()
     return text
     #return [tok.text for tok in spacy_en.tokenizer(text)]
 #Corpus = pd.read_csv(os.path.join(data_directory,data_name), sep="\t")
