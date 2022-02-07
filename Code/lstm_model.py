@@ -42,7 +42,7 @@ if glove == "False":
 else:
     glove = True
 
-embedding_size = 300
+embedding_size = 100
 hidden_size = int(args.hidden)
 dropout = float(args.dropout)
 
@@ -57,9 +57,9 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 number_of_epochs = 10
 embedding_size = 50
-hidden_size = 64
-dropout = 0.75
-data_directory = "../Data/final_data"
+hidden_size = 128
+dropout = 0.5
+data_directory = "../Data/CodaLab_Data/final_data"
 data_name = "final_data.tsv"
 
 try:
@@ -81,8 +81,9 @@ with open(report_address,"a+") as f:
 def text_preprocess(text):
     #text = re.sub("@([A-Za-z0-9_]+)", "username", text)
     #text = re.sub(r"http\S+", "link", text)
-    text = demoji.replace_with_desc(text, sep=" ")
-    text = re.sub("[ ]+", " ", text)
+    #text = demoji.replace_with_desc(text, sep=" ")
+    # text = re.sub("[ ]+", " ", text)
+    text = re.sub('\s+', ' ', text)
     return [tok.text for tok in spacy_en.tokenizer(text)]
 
 #tokenizer = lambda text: list(text)
@@ -95,14 +96,14 @@ text_field = Field(tokenize = fake_tokenizer, sequential = True, preprocessing =
 #label_field = Field(sequential=False, use_vocab=False, batch_first=True, dtype=torch.float)
 label_field = LabelField(is_target=True)
 
-#fields = [(None, None), ("label", label_field), ('text', text_field), (None, None), (None, None), (None, None)]
+fields = [(None, None), ("label", label_field), ('text', text_field), (None, None), (None, None), (None, None)]
 #fields = [(None, None), ("label", label_field), (None, None), ('text', text_field), (None, None), (None, None)]
-fields = [(None, None), ("label", label_field), (None, None), (None, None), ('text', text_field), (None, None)]
+# fields = [(None, None), ("label", label_field), (None, None), (None, None), ('text', text_field), (None, None)]
 #fields = [(None, None), ("label", label_field), (None, None), (None, None), (None, None), ('text', text_field)]
 
 
 #dataset = TabularDataset(path=os.path.join(data_directory, data_name), format='TSV', fields=fields, skip_header=True)
-dataset, test = TabularDataset.splits(path=os.path.join(data_directory, "2"), train = "train.tsv",test = "test.tsv",format='TSV', fields=fields, skip_header=True)
+dataset, test = TabularDataset.splits(path=os.path.join(data_directory, "1"), train = "train.tsv",test = "test.tsv",format='TSV', fields=fields, skip_header=True)
 print(dataset)
 #train, test, valid = dataset.split([0.7, 0.1, 0.2], stratified=True) ## Keeping the same ratio of labels in the train, valid and test datasets
 train, valid = dataset.split([0.8, 0.2], stratified=True)
@@ -111,7 +112,7 @@ train, valid = dataset.split([0.8, 0.2], stratified=True)
 #else:
 #    text_field.build_vocab(train, min_freq=2)
 #text_field.build_vocab(train, min_freq=2)
-text_field.build_vocab(train, min_freq=2, vectors='glove.6B.300d')
+text_field.build_vocab(train, min_freq=2, vectors='glove.6B.'+str(embedding_size)+'d')
 
 label_field.build_vocab(train)
 print(f'the train, validation and test sets includes {len(train)},{len(valid)} and {len(test)} instances, respectively')
