@@ -37,7 +37,7 @@ def preprocess(text):
 df["text"] = df.apply(lambda x: preprocess(x['text']), axis=1)
 
 data_name = "merged_dataset.csv"
-df.to_csv(os.path.join(data_directory, data_name), sep = "\t")
+# df.to_csv(os.path.join(data_directory, data_name), sep = "\t")
 
 
 #
@@ -55,18 +55,18 @@ df.to_csv(os.path.join(data_directory, data_name), sep = "\t")
 # #print(re.search("(?P<url>https?://[^\s]+)", myString).group("url"))
 # #text = "To learn more, please follow us — http://www.sql-datatools.com To Learn more, please visit our YouTube channel at — http://www.youtube.com/c/Sql-datatools To Learn more, please visit our Instagram account at — https://www.instagram.com/asp.mukesh/ To Learn more, please visit our twitter account at — https://twitter.com/macxima To Learn more, please visit our Medium account at — https://medium.com/@macxima"
 #
-# def extract_urls(text):
-#     link_regex = re.compile('((https?):((//)|(\\\\))+([\w\d:#@%/;$()~_?\+-=\\\.&](#!)?)*)', re.DOTALL)
-#     links = re.findall(link_regex, text)
-#     urls = [link[0] for link in links]
-#     return urls
+def extract_urls(text):
+    link_regex = re.compile('((https?):((//)|(\\\\))+([\w\d:#@%/;$()~_?\+-=\\\.&](#!)?)*)', re.DOTALL)
+    links = re.findall(link_regex, text)
+    urls = [link[0] for link in links]
+    return urls
 # #
-# url_list = []
+url_list = []
 # # domains = []
 # #
-# for index, row in df.iterrows():
-#     urls = extract_urls(row.text)
-#     url_list.extend(urls)
+for index, row in df.iterrows():
+    urls = extract_urls(row.text)
+    url_list.extend(urls)
 #     # for url in urls:
 #     #     try:
 #     #         r = RQ.get(url)
@@ -105,3 +105,4 @@ df.to_csv(os.path.join(data_directory, data_name), sep = "\t")
 # for index, item in enumerate(chunks):
 #     with open(os.path.join(data_directory, data_name+str(index+1)+".LIST"), "wb") as f:
 #         pickle.dump(item, f)
+print(len(url_list))

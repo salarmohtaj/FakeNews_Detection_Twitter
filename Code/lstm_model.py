@@ -1,20 +1,17 @@
-import matplotlib.pyplot as plt
-import pandas as pd
 import torch
 from torchtext.legacy.data import Field, LabelField, TabularDataset, BucketIterator
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import torch.optim as optim
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 import os
 import re
 import pickle
 import demoji
 import time
-from collections import OrderedDict
 import argparse
 import spacy
-
+import numpy as np
 try:
     spacy_en = spacy.load('en_core_web_sm')
 except:
@@ -42,22 +39,20 @@ if glove == "False":
 else:
     glove = True
 
-embedding_size = 100
+embedding_size = 300
 hidden_size = int(args.hidden)
 dropout = float(args.dropout)
 
 number_of_layers = 2
 
-language_name = str("English")
-destination_folder = "Model/"+runmane+"_"+language_name+"_"+str(hidden_size)+"_"+str(embedding_size)+"_"+str(int(glove))+"_"+str(learning_rate)+"_"+str(dropout)
-report_address = "Reports/"+runmane+"_"+language_name+"_"+str(hidden_size)+"_"+str(embedding_size)+"_"+str(int(glove))+"_"+str(learning_rate)+"_"+str(dropout)
+destination_folder = "Model/"+runmane+"_"+str(hidden_size)+"_"+str(embedding_size)+"_"+str(int(glove))+"_"+str(learning_rate)+"_"+str(dropout)
+report_address = "Reports/"+runmane+"_"+str(hidden_size)+"_"+str(embedding_size)+"_"+str(int(glove))+"_"+str(learning_rate)+"_"+str(dropout)
 ########################################################################
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-number_of_epochs = 10
-embedding_size = 50
-hidden_size = 128
+number_of_epochs = 20
+hidden_size = 256
 dropout = 0.5
 data_directory = "../Data/CodaLab_Data/final_data"
 data_name = "final_data.tsv"
@@ -75,7 +70,7 @@ try:
 except:
     pass
 with open(report_address,"a+") as f:
-    f.write(runmane+"_"+language_name+"_"+str(hidden_size)+"_"+str(embedding_size)+"_"+str(int(glove))+"_"+str(learning_rate)+"_"+str(dropout)+"\n\n")
+    f.write(runmane+"_"+str(hidden_size)+"_"+str(embedding_size)+"_"+str(int(glove))+"_"+str(learning_rate)+"_"+str(dropout)+"\n\n")
 
 
 def text_preprocess(text):
@@ -103,35 +98,6 @@ fields = [(None, None), ("label", label_field), ('text', text_field), (None, Non
 
 
 #dataset = TabularDataset(path=os.path.join(data_directory, data_name), format='TSV', fields=fields, skip_header=True)
-dataset, test = TabularDataset.splits(path=os.path.join(data_directory, "1"), train = "train.tsv",test = "test.tsv",format='TSV', fields=fields, skip_header=True)
-print(dataset)
-#train, test, valid = dataset.split([0.7, 0.1, 0.2], stratified=True) ## Keeping the same ratio of labels in the train, valid and test datasets
-train, valid = dataset.split([0.8, 0.2], stratified=True)
-#if glove:
-#    text_field.build_vocab(train, min_freq=2, vectors='glove.6B.' + str(embedding_size) + 'd')
-#else:
-#    text_field.build_vocab(train, min_freq=2)
-#text_field.build_vocab(train, min_freq=2)
-text_field.build_vocab(train, min_freq=2, vectors='glove.6B.'+str(embedding_size)+'d')
-
-label_field.build_vocab(train)
-print(f'the train, validation and test sets includes {len(train)},{len(valid)} and {len(test)} instances, respectively')
-
-#label_field.vocab.stoi = OrderedDict([('HOF', 1), ('NOT', 0)])
-#print(label_field.vocab.itos)
-#print(label_field.vocab.stoi)
-#label_field.vocab.stoi = OrderedDict([('HOF', 1), ('NOT', 0)])
-#print(label_field.vocab.stoi[train[0].label])
-#print(label_field.vocab(["NOT"]))
-print(label_field.vocab.itos)
-print(label_field.vocab.stoi)
-#print(len(train))
-
-# Iterators
-train_iter = BucketIterator(train, batch_size=BATCH_SIZE, sort_key=lambda x: len(x.text),device=device, sort=True, sort_within_batch=True)
-valid_iter = BucketIterator(valid, batch_size=BATCH_SIZE, sort_key=lambda x: len(x.text),device=device, sort=True, sort_within_batch=True)
-test_iter = BucketIterator(test, batch_size=BATCH_SIZE, sort_key=lambda x: len(x.text),device=device, sort=True, sort_within_batch=True)
-
 
 
 class LSTM(nn.Module):
@@ -246,19 +212,8 @@ def evaluate(model, iterator, criterion):
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
 
-input_size = len(text_field.vocab)
-model = LSTM(input_size,
-             embedding_size,
-             hidden_size,
-             number_of_layers,
-             dropout).to(device)
-criterion=nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
-print(f'The model has {count_parameters(model):,} parameters')
 
 
 def binary_accuracy(preds, y):
@@ -274,57 +229,7 @@ def epoch_time(start_time, end_time):
     elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
     return elapsed_mins, elapsed_secs
 
-best_valid_loss=float("Inf")
-
-training_stats = []
-train_loss_list = []
-valid_loss_list = []
-epoch_counter_list = []
-last_best_loss = 0
-for epoch in range(number_of_epochs):
-    start_time = time.time()
-    train_loss, train_acc = train(model, train_iter, optimizer, criterion)
-    end_time = time.time()
-    epoch_mins, epoch_secs = epoch_time(start_time, end_time)
-    valid_loss, valid_acc = evaluate(model, valid_iter, criterion)
-    train_loss_list.append(train_loss)
-    valid_loss_list.append(valid_loss)
-    epoch_counter_list.append(epoch)
-    print(f'Epoch: {epoch + 1:02}/{number_of_epochs} | Epoch Time: {epoch_mins}m {epoch_secs}s')
-    print(f'\tTrain Loss: {train_loss:.3f} | Train Acc: {train_acc * 100:.2f}%')
-    print(f'\tVal. Loss: {valid_loss:.3f} |  Val. Acc: {valid_acc * 100:.2f}%')
-    with open(report_address, "a") as f:
-        f.write("Epoch "+str(epoch+1)+"\n")
-        f.write("Train Loss: "+str(train_loss)+"\tTrain Acc"+str(train_acc)+"\n")
-        f.write("Val. Loss: " + str(valid_loss) + "\tVal. Acc" + str(valid_acc)+"\n")
-    if valid_loss < best_valid_loss:
-        last_best_loss = epoch
-        print("\t---> Saving the model <---")
-        best_valid_loss = valid_loss
-        #torch.save(model.state_dict(), 'tut6-model.pt')
-        save_checkpoint(destination_folder + '/model.pt', model, optimizer, best_valid_loss)
-        save_metrics(destination_folder + '/metrics.pt', train_loss_list, valid_loss_list, epoch_counter_list)
-    training_stats.append(
-        {
-            'epoch': epoch + 1,
-            'Training Loss': train_loss,
-            'Valid. Loss': valid_loss,
-            'Training Accuracy': train_acc,
-            #'Valid. Accur.': avg_val_accuracy,
-            'Training Time': epoch_mins,
-        }
-    )
-    if ((epoch - last_best_loss) > 9):
-        print("################")
-        print("Termination because of lack of improvement in the last 10 epochs")
-        print("################")
-        with open(report_address, "a") as f:
-            f.write("Termination because of lack of improvement in the last 10 epochs\n")
-        break
-
-save_metrics(destination_folder + '/metrics.pt', train_loss_list, valid_loss_list, epoch_counter_list)
-print('Finished Training!')
-
+results_f1 = []
 
 def test_evaluation(model, test_loader, version='title', threshold=0.5):
     y_pred = []
@@ -347,6 +252,7 @@ def test_evaluation(model, test_loader, version='title', threshold=0.5):
     print('Classification Report:')
     classificationreport = classification_report(y_true, y_pred, labels=[1, 0], digits=4)
     print(classificationreport)
+    results_f1.append(f1_score(y_true, y_pred, labels=[1, 0]))
     #cm = confusion_matrix(y_true, y_pred, labels=[1, 0])
     #with open(report_address, "a") as f:
     #    f.write("Classification Report:\n")
@@ -360,15 +266,88 @@ def test_evaluation(model, test_loader, version='title', threshold=0.5):
     #ax.yaxis.set_ticklabels(['FAKE', 'REAL'])
 
 
-#best_model = LSTM().to(device)
-best_model = LSTM(input_size,
-             embedding_size,
-             hidden_size,
-             number_of_layers,
-             dropout).to(device)
-#best_model.load_state_dict(torch.load('tut6-model.pt'))
+for index in range(1, 6):
+    dataset, test_data = TabularDataset.splits(path=os.path.join(data_directory, str(index)), train = "train.tsv",test = "test.tsv",format='TSV', fields=fields, skip_header=True)
+    train_data, valid_data = dataset.split([0.8, 0.2], stratified=True)
+    text_field.build_vocab(train_data, min_freq=2, vectors='glove.6B.'+str(embedding_size)+'d')
+
+    label_field.build_vocab(train_data)
+    # print(f'the train, validation and test sets includes {len(train_data)},{len(valid_data)} and {len(test_data)} instances, respectively')
 
 
-load_checkpoint(destination_folder + '/model.pt', best_model, optimizer)
-optimizer = optim.Adam(best_model.parameters(), lr=learning_rate)
-test_evaluation(best_model, test_iter)
+    # print(label_field.vocab.itos)
+    # print(label_field.vocab.stoi)
+    train_iter = BucketIterator(train_data, batch_size=BATCH_SIZE, sort_key=lambda x: len(x.text),device=device, sort=True, sort_within_batch=True)
+    valid_iter = BucketIterator(valid_data, batch_size=BATCH_SIZE, sort_key=lambda x: len(x.text),device=device, sort=True, sort_within_batch=True)
+    test_iter = BucketIterator(test_data, batch_size=BATCH_SIZE, sort_key=lambda x: len(x.text),device=device, sort=True, sort_within_batch=True)
+
+
+
+    input_size = len(text_field.vocab)
+    model = LSTM(input_size,
+                 embedding_size,
+                 hidden_size,
+                 number_of_layers,
+                 dropout).to(device)
+    criterion=nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    best_valid_loss=float("Inf")
+    # print(f'The model has {count_parameters(model):,} parameters')
+    training_stats = []
+    train_loss_list = []
+    valid_loss_list = []
+    epoch_counter_list = []
+    last_best_loss = 0
+    for epoch in range(number_of_epochs):
+        start_time = time.time()
+        train_loss, train_acc = train(model, train_iter, optimizer, criterion)
+        end_time = time.time()
+        epoch_mins, epoch_secs = epoch_time(start_time, end_time)
+        valid_loss, valid_acc = evaluate(model, valid_iter, criterion)
+        train_loss_list.append(train_loss)
+        valid_loss_list.append(valid_loss)
+        epoch_counter_list.append(epoch)
+        # print(f'Epoch: {epoch + 1:02}/{number_of_epochs} | Epoch Time: {epoch_mins}m {epoch_secs}s')
+        # print(f'\tTrain Loss: {train_loss:.3f} | Train Acc: {train_acc * 100:.2f}%')
+        # print(f'\tVal. Loss: {valid_loss:.3f} |  Val. Acc: {valid_acc * 100:.2f}%')
+        with open(report_address, "a") as f:
+            f.write("Epoch "+str(epoch+1)+"\n")
+            f.write("Train Loss: "+str(train_loss)+"\tTrain Acc"+str(train_acc)+"\n")
+            f.write("Val. Loss: " + str(valid_loss) + "\tVal. Acc" + str(valid_acc)+"\n")
+        if valid_loss < best_valid_loss:
+            last_best_loss = epoch
+            # print("\t---> Saving the model <---")
+            best_valid_loss = valid_loss
+            #torch.save(model.state_dict(), 'tut6-model.pt')
+            save_checkpoint(destination_folder + '/model.pt', model, optimizer, best_valid_loss)
+            save_metrics(destination_folder + '/metrics.pt', train_loss_list, valid_loss_list, epoch_counter_list)
+        training_stats.append(
+            {
+                'epoch': epoch + 1,
+                'Training Loss': train_loss,
+                'Valid. Loss': valid_loss,
+                'Training Accuracy': train_acc,
+                #'Valid. Accur.': avg_val_accuracy,
+                'Training Time': epoch_mins,
+            }
+        )
+        if ((epoch - last_best_loss) > 9):
+            # print("################")
+            # print("Termination because of lack of improvement in the last 10 epochs")
+            # print("################")
+            with open(report_address, "a") as f:
+                f.write("Termination because of lack of improvement in the last 10 epochs\n")
+            break
+
+    save_metrics(destination_folder + '/metrics.pt', train_loss_list, valid_loss_list, epoch_counter_list)
+    # print('Finished Training!')
+    best_model = LSTM(input_size,
+                 embedding_size,
+                 hidden_size,
+                 number_of_layers,
+                 dropout).to(device)
+    load_checkpoint(destination_folder + '/model.pt', best_model, optimizer)
+    optimizer = optim.Adam(best_model.parameters(), lr=learning_rate)
+    test_evaluation(best_model, test_iter)
+result_list_f1 = np.array(results_f1)
+print(result_list_f1.mean(), result_list_f1.std())
